@@ -1,0 +1,182 @@
+// usersSlice.ts
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { RootState } from './store';
+import { fetchUserData, fetchUserPosts } from './api'; // Your API utility functions
+
+interface UserData {
+  id: string;
+  name: string;
+  bio: string;
+}
+
+interface UserPosts {
+  userId: string;
+  posts: string[];
+}
+
+interface UsersState {
+  loading: boolean;
+  error: string | null;
+  userData: UserData | null;
+  userPosts: UserPosts | null;
+}
+
+const initialState: UsersState = {
+  loading: false,
+  error: null,
+  userData: null,
+  userPosts: null,
+};
+
+export const fetchUser = createAsyncThunk(
+  'users/fetchUser',
+  async (userId: string) => {
+    const response = await fetchUserData(userId);
+    return response.data;
+  }
+);
+
+export const fetchPosts = createAsyncThunk(
+  'users/fetchPosts',
+  async (userId: string) => {
+    const response = await fetchUserPosts(userId);
+    return { userId, posts: response.data };
+  }
+);
+
+const usersSlice = createSlice({
+  name: 'users',
+  initialState,
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchUser.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchUser.fulfilled, (state, action: PayloadAction<UserData>) => {
+        state.loading = false;
+        state.userData = action.payload;
+      })
+      .addCase(fetchUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message ?? 'An error occurred';
+      })
+      .addCase(fetchPosts.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchPosts.fulfilled, (state, action: PayloadAction<UserPosts>) => {
+        state.loading = false;
+        state.userPosts = action.payload;
+      })
+      .addCase(fetchPosts.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message ?? 'An error occurred';
+      });
+  },
+});
+
+export const selectUserData = (state: RootState) => state.users.userData;
+export const selectUserPosts = (state: RootState) => state.users.userPosts;
+
+export default usersSlice.reducer;
+
+
+
+
+
+
+
+
+
+// api.ts
+interface ApiResponse {
+  data: any; // Define your API response structure here
+}
+
+export const fetchUserData = async (userId: string): Promise<ApiResponse> => {
+  const response = await fetch(`https://api.example.com/users/${userId}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch user data');
+  }
+  return response.json();
+};
+
+export const fetchUserPosts = async (userId: string): Promise<ApiResponse> => {
+  const response = await fetch(`https://api.example.com/users/${userId}/posts`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch user posts');
+  }
+  return response.json();
+};
+
+
+
+
+
+
+
+
+
+
+// store.ts
+import { configureStore } from '@reduxjs/toolkit';
+import usersReducer from './usersSlice';
+
+export const store = configureStore({
+  reducer: {
+    users: usersReducer,
+  },
+});
+
+export type RootState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch;
+
+
+
+
+
+
+
+
+
+
+// UserProfile.tsx
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchUser, fetchPosts, selectUserData, selectUserPosts } from './usersSlice';
+
+const UserProfile: React.FC = () => {
+  const dispatch = useDispatch();
+  const userData = useSelector(selectUserData);
+  const userPosts = useSelector(selectUserPosts);
+
+  useEffect(() => {
+    dispatch(fetchUser('user_id'));
+    dispatch(fetchPosts('user_id'));
+  }, [dispatch]);
+
+  if (!userData || !userPosts) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <div>
+      <h1>{userData.name}</h1>
+      <p>{userData.bio}</p>
+      <h2>Posts</h2>
+      <ul>
+        {userPosts.posts.map((post, index) => (
+          <li key={index}>{post}</li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+
+export default UserProfile;
+
+
+
+
