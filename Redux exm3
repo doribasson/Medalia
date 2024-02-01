@@ -1,0 +1,120 @@
+// actions.ts
+export const FETCH_USER_REQUEST = 'FETCH_USER_REQUEST';
+export const FETCH_USER_SUCCESS = 'FETCH_USER_SUCCESS';
+export const FETCH_USER_FAILURE = 'FETCH_USER_FAILURE';
+
+export const fetchUserRequest = () => ({
+  type: FETCH_USER_REQUEST,
+});
+
+export const fetchUserSuccess = (data: UserData) => ({
+  type: FETCH_USER_SUCCESS,
+  payload: data,
+});
+
+export const fetchUserFailure = (error: string) => ({
+  type: FETCH_USER_FAILURE,
+  payload: error,
+});
+
+
+
+
+
+
+
+// reducers.ts
+import { combineReducers } from 'redux';
+import { FETCH_USER_REQUEST, FETCH_USER_SUCCESS, FETCH_USER_FAILURE } from './actions';
+
+interface UserState {
+  loading: boolean;
+  error: string | null;
+  data: UserData | null;
+}
+
+const initialUserState: UserState = {
+  loading: false,
+  error: null,
+  data: null,
+};
+
+const userReducer = (state = initialUserState, action: any) => {
+  switch (action.type) {
+    case FETCH_USER_REQUEST:
+      return {
+        ...state,
+        loading: true,
+        error: null,
+      };
+    case FETCH_USER_SUCCESS:
+      return {
+        ...state,
+        loading: false,
+        data: action.payload,
+      };
+    case FETCH_USER_FAILURE:
+      return {
+        ...state,
+        loading: false,
+        error: action.payload,
+      };
+    default:
+      return state;
+  }
+};
+
+export default combineReducers({
+  user: userReducer,
+});
+
+
+
+
+
+
+
+
+
+
+// UserComponent.tsx
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchUserRequest, fetchUserSuccess, fetchUserFailure } from './actions';
+import { RootState } from './reducers';
+
+const UserComponent: React.FC = () => {
+  const dispatch = useDispatch();
+  const { loading, error, data } = useSelector((state: RootState) => state.user);
+
+  useEffect(() => {
+    dispatch(fetchUserRequest());
+    fetch('/api/user') // Your API endpoint
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Failed to fetch user');
+        }
+        return response.json();
+      })
+      .then((userData) => {
+        dispatch(fetchUserSuccess(userData));
+      })
+      .catch((error) => {
+        dispatch(fetchUserFailure(error.message));
+      });
+  }, [dispatch]);
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
+  if (!data) return null;
+
+  return (
+    <div>
+      <h1>{data.name}</h1>
+      <p>{data.bio}</p>
+    </div>
+  );
+};
+
+export default UserComponent;
+
