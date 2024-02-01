@@ -1,0 +1,222 @@
+Server Setup (server.ts):
+import express from 'express';
+import cors from 'cors';
+import dataRoutes from './routes/dataRoutes';
+
+const app = express();
+const PORT = 5000;
+
+app.use(cors());
+app.use(express.json());
+
+app.use('/api/data', dataRoutes);
+
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
+
+
+
+
+Routes (dataRoutes.ts):
+import express from 'express';
+import { getData, createData, updateData, deleteData } from '../controllers/dataController';
+
+const router = express.Router();
+
+router.get('/', getData);
+router.post('/', createData);
+router.put('/:id', updateData);
+router.delete('/:id', deleteData);
+
+export default router;
+
+
+
+
+
+
+
+
+Controllers (dataController.ts):
+import { Request, Response } from 'express';
+import DataModel from '../models/DataModel';
+
+export const getData = async (req: Request, res: Response) => {
+  try {
+    const data = await DataModel.find();
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const createData = async (req: Request, res: Response) => {
+  const newData = new DataModel(req.body);
+  try {
+    const savedData = await newData.save();
+    res.status(201).json(savedData);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+export const updateData = async (req: Request, res: Response) => {
+  try {
+    const updatedData = await DataModel.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(updatedData);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+export const deleteData = async (req: Request, res: Response) => {
+  try {
+    await DataModel.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Data deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+
+
+
+
+my-app/
+│
+└── src/
+    ├── components/
+    │   ├── DataList.tsx
+    │   └── DataForm.tsx
+    │
+    ├── context/
+    │   ├── DataContext.tsx
+    │   └── actions.ts
+    │
+    ├── services/
+    │   └── dataService.ts
+    │
+    └── App.tsx
+
+
+
+DataContext (DataContext.tsx):
+import React, { createContext, useReducer, useContext } from 'react';
+import { IData } from '../models/DataModel';
+import { dataReducer } from './actions';
+
+interface IDataContext {
+  data: IData[];
+  dispatch: React.Dispatch<any>;
+}
+
+const initialState: IData[] = [];
+
+const DataStateContext = createContext<IDataContext | undefined>(undefined);
+const DataDispatchContext = createContext<React.Dispatch<any> | undefined>(undefined);
+
+export const DataProvider: React.FC = ({ children }) => {
+  const [data, dispatch] = useReducer(dataReducer, initialState);
+
+  return (
+    <DataStateContext.Provider value={{ data, dispatch }}>
+      <DataDispatchContext.Provider value={dispatch}>{children}</DataDispatchContext.Provider>
+    </DataStateContext.Provider>
+  );
+};
+
+export const useDataState = () => {
+  const context = useContext(DataStateContext);
+  if (context === undefined) {
+    throw new Error('useDataState must be used within a DataProvider');
+  }
+  return context;
+};
+
+export const useDataDispatch = () => {
+  const context = useContext(DataDispatchContext);
+  if (context === undefined) {
+    throw new Error('useDataDispatch must be used within a DataProvider');
+  }
+  return context;
+};
+
+
+
+
+Actions (actions.ts):
+import { IData } from '../models/DataModel';
+
+export const ActionTypes = {
+  SET_DATA: 'SET_DATA',
+};
+
+export const setData = (data: IData[]) => ({
+  type: ActionTypes.SET_DATA,
+  payload: data,
+});
+
+
+
+
+Reducer (reducer.ts);
+import { ActionTypes } from './actions';
+import { IData } from '../models/DataModel';
+
+export const dataReducer = (state: IData[], action: any): IData[] => {
+  switch (action.type) {
+    case ActionTypes.SET_DATA:
+      return action.payload;
+    default:
+      return state;
+  }
+};
+
+
+
+
+Data Service (dataService.ts): 
+import axios from 'axios';
+import { IData } from '../models/DataModel';
+
+const BASE_URL = 'http://localhost:5000/api/data';
+
+export const getData = async () => {
+  try {
+    const response = await axios.get<IData[]>(BASE_URL);
+    return response.data;
+  } catch (error) {
+    throw new Error('Failed to fetch data');
+  }
+};
+
+export const createData = async (data: IData) => {
+  try {
+    const response = await axios.post<IData>(BASE_URL, data);
+    return response.data;
+  } catch (error) {
+    throw new Error('Failed to create data');
+  }
+};
+
+export const updateData = async (id: string, data: IData) => {
+  try {
+    const response = await axios.put<IData>(`${BASE_URL}/${id}`, data);
+    return response.data;
+  } catch (error) {
+    throw new Error('Failed to update data');
+  }
+};
+
+
+export const deleteData = async (id: string) => {
+  try {
+    await axios.delete(`${BASE_URL}/${id}`);
+  } catch (error) {
+    throw new Error('Failed to delete data');
+  }
+};
+
+
