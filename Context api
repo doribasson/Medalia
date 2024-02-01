@@ -1,0 +1,152 @@
+npm install express mongoose body-parser cors
+
+const express = require('express');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const mongoose = require('mongoose');
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+// Middleware
+app.use(bodyParser.json());
+app.use(cors());
+
+// Connect to MongoDB
+mongoose.connect('mongodb://localhost:27017/myapp', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+
+// Data model
+const Data = mongoose.model('Data', {
+  title: String,
+  description: String,
+});
+
+// Routes
+app.get('/api/data', async (req, res) => {
+  const data = await Data.find();
+  res.json(data);
+});
+
+app.post('/api/data', async (req, res) => {
+  const newData = new Data(req.body);
+  await newData.save();
+  res.json(newData);
+});
+
+app.put('/api/data/:id', async (req, res) => {
+  const { id } = req.params;
+  const updatedData = await Data.findByIdAndUpdate(id, req.body, { new: true });
+  res.json(updatedData);
+});
+
+app.delete('/api/data/:id', async (req, res) => {
+  const { id } = req.params;
+  await Data.findByIdAndDelete(id);
+  res.json({ message: 'Deleted successfully' });
+});
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
+
+
+npm init vite@latest my-app --template react-ts
+cd my-app
+npm install axios
+
+
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import axios from 'axios';
+
+interface IData {
+  _id: string;
+  title: string;
+  description: string;
+}
+
+interface IDataContext {
+  data: IData[];
+  fetchData: () => void;
+  addData: (newData: IData) => void;
+  updateData: (id: string, updatedData: IData) => void;
+  deleteData: (id: string) => void;
+}
+
+const DataContext = createContext<IDataContext>({
+  data: [],
+  fetchData: () => {},
+  addData: (newData: IData) => {},
+  updateData: (id: string, updatedData: IData) => {},
+  deleteData: (id: string) => {},
+});
+
+export const useDataContext = () => useContext(DataContext);
+
+const DataProvider: React.FC = ({ children }) => {
+  const [data, setData] = useState<IData[]>([]);
+
+  const fetchData = async () => {
+    const response = await axios.get<IData[]>('/api/data');
+    setData(response.data);
+  };
+
+  const addData = async (newData: IData) => {
+    const response = await axios.post<IData>('/api/data', newData);
+    setData([...data, response.data]);
+  };
+
+  const updateData = async (id: string, updatedData: IData) => {
+    const response = await axios.put<IData>(`/api/data/${id}`, updatedData);
+    setData(data.map(item => (item._id === id ? response.data : item)));
+  };
+
+  const deleteData = async (id: string) => {
+    await axios.delete(`/api/data/${id}`);
+    setData(data.filter(item => item._id !== id));
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  return (
+    <DataContext.Provider value={{ data, fetchData, addData, updateData, deleteData }}>
+      {children}
+    </DataContext.Provider>
+  );
+};
+
+const App: React.FC = () => {
+  const { data, addData, updateData, deleteData } = useDataContext();
+
+  return (
+    <div>
+      {/* Your components and UI here */}
+    </div>
+  );
+};
+
+export default App;
+
+
+
+
+
+
+import React from 'react';
+import ReactDOM from 'react-dom';
+import App from './App';
+import { DataProvider } from './App';
+
+ReactDOM.render(
+  <React.StrictMode>
+    <DataProvider>
+      <App />
+    </DataProvider>
+  </React.StrictMode>,
+  document.getElementById('root')
+);
