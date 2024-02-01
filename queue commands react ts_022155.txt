@@ -1,0 +1,126 @@
+full code for queue commands in react ts
+ChatGPT
+Sure, implementing a command queue in a React TypeScript application typically involves managing a queue state and processing commands one by one. Below is a simple example of a command queue in a React TypeScript app using hooks.
+
+tsx
+Copy code
+// CommandQueueContext.tsx
+import React, { createContext, useContext, useEffect, useState } from 'react';
+
+interface Command {
+  id: number;
+  action: () => void;
+}
+
+interface CommandQueueContextProps {
+  enqueueCommand: (action: () => void) => void;
+}
+
+const CommandQueueContext = createContext<CommandQueueContextProps | undefined>(undefined);
+
+export const CommandQueueProvider: React.FC = ({ children }) => {
+  const [commandQueue, setCommandQueue] = useState<Command[]>([]);
+  const [currentCommand, setCurrentCommand] = useState<Command | null>(null);
+
+  const enqueueCommand = (action: () => void) => {
+    const newCommand: Command = { id: Date.now(), action };
+    setCommandQueue((prevQueue) => [...prevQueue, newCommand]);
+  };
+
+  useEffect(() => {
+    const processNextCommand = () => {
+      if (commandQueue.length > 0 && !currentCommand) {
+        const [nextCommand, ...remainingCommands] = commandQueue;
+        setCurrentCommand(nextCommand);
+        setCommandQueue(remainingCommands);
+      }
+    };
+
+    processNextCommand();
+  }, [commandQueue, currentCommand]);
+
+  const handleCommandComplete = () => {
+    setCurrentCommand(null);
+  };
+
+  return (
+    <CommandQueueContext.Provider value={{ enqueueCommand }}>
+      {children}
+      {currentCommand && (
+        <CommandExecutor command={currentCommand} onComplete={handleCommandComplete} />
+      )}
+    </CommandQueueContext.Provider>
+  );
+};
+
+export const useCommandQueue = (): CommandQueueContextProps => {
+  const context = useContext(CommandQueueContext);
+  if (!context) {
+    throw new Error('useCommandQueue must be used within a CommandQueueProvider');
+  }
+  return context;
+};
+
+interface CommandExecutorProps {
+  command: Command;
+  onComplete: () => void;
+}
+
+const CommandExecutor: React.FC<CommandExecutorProps> = ({ command, onComplete }) => {
+  useEffect(() => {
+    command.action();
+    onComplete();
+  }, [command, onComplete]);
+
+  return null; // No rendering for the CommandExecutor component
+};
+Now, you can use this CommandQueueProvider in your main app file:
+
+tsx
+Copy code
+// App.tsx
+import React from 'react';
+import { CommandQueueProvider } from './CommandQueueContext';
+import CommandingComponent from './CommandingComponent';
+
+const App: React.FC = () => {
+  return (
+    <CommandQueueProvider>
+      <h1>React Command Queue Example</h1>
+      <CommandingComponent />
+    </CommandQueueProvider>
+  );
+};
+
+export default App;
+Here is a simple component that uses the command queue:
+
+tsx
+Copy code
+// CommandingComponent.tsx
+import React from 'react';
+import { useCommandQueue } from './CommandQueueContext';
+
+const CommandingComponent: React.FC = () => {
+  const { enqueueCommand } = useCommandQueue();
+
+  const handleButtonClick = () => {
+    enqueueCommand(() => {
+      console.log('Command 1 executed!');
+    });
+  };
+
+  return (
+    <div>
+      <button onClick={handleButtonClick}>Enqueue Command 1</button>
+      {/* Add more buttons to enqueue additional commands */}
+    </div>
+  );
+};
+
+export default CommandingComponent;
+In this example, clicking the button in CommandingComponent will enqueue a command, and the CommandExecutor component will execute the command and move to the next one in the queue when the previous command completes. You can expand this pattern to handle various types of commands and actions.
+
+
+
+

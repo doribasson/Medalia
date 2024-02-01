@@ -1,0 +1,411 @@
+full code todos with reactjs  and context api
+
+Certainly! Below is a simple example of a Todos application using React with the Context API. This example includes a TodoContext to manage the state of todos and two components, TodoList and AddTodo, that consume and modify the todos through the context.
+
+jsx
+Copy code
+// TodoContext.js
+import React, { createContext, useContext, useReducer, Dispatch } from 'react';
+
+const TodoStateContext = createContext();
+const TodoDispatchContext = createContext();
+
+const todoReducer = (state, action) => {
+  switch (action.type) {
+    case 'ADD_TODO':
+      return [
+        ...state,
+        {
+          id: state.length + 1,
+          text: action.text,
+          completed: false,
+        },
+      ];
+    case 'TOGGLE_TODO':
+      return state.map((todo) =>
+        todo.id === action.id ? { ...todo, completed: !todo.completed } : todo
+      );
+    default:
+      return state;
+  }
+};
+
+const TodoProvider = ({ children }) => {
+  const [todos, dispatch] = useReducer(todoReducer, []);
+
+  return (
+    <TodoStateContext.Provider value={todos}>
+      <TodoDispatchContext.Provider value={dispatch}>
+        {children}
+      </TodoDispatchContext.Provider>
+    </TodoStateContext.Provider>
+  );
+};
+
+const useTodoState = () => {
+  const context = useContext(TodoStateContext);
+  if (!context) {
+    throw new Error('useTodoState must be used within a TodoProvider');
+  }
+  return context;
+};
+
+const useTodoDispatch = () => {
+  const context = useContext(TodoDispatchContext);
+  if (!context) {
+    throw new Error('useTodoDispatch must be used within a TodoProvider');
+  }
+  return context;
+};
+
+export { TodoProvider, useTodoState, useTodoDispatch };
+Now, let's create components that use this context:
+
+jsx
+Copy code
+// TodoList.js
+import React from 'react';
+import { useTodoState, useTodoDispatch } from './TodoContext';
+
+const TodoList = () => {
+  const todos = useTodoState();
+  const dispatch = useTodoDispatch();
+
+  const toggleTodo = (id) => {
+    dispatch({ type: 'TOGGLE_TODO', id });
+  };
+
+  return (
+    <ul>
+      {todos.map((todo) => (
+        <li
+          key={todo.id}
+          style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}
+          onClick={() => toggleTodo(todo.id)}
+        >
+          {todo.text}
+        </li>
+      ))}
+    </ul>
+  );
+};
+
+export default TodoList;
+jsx
+Copy code
+// AddTodo.js
+import React, { useState } from 'react';
+import { useTodoDispatch } from './TodoContext';
+
+const AddTodo = () => {
+  const [text, setText] = useState('');
+  const dispatch = useTodoDispatch();
+
+  const addTodo = () => {
+    if (text.trim() !== '') {
+      dispatch({ type: 'ADD_TODO', text });
+      setText('');
+    }
+  };
+
+  return (
+    <div>
+      <input type="text" value={text} onChange={(e) => setText(e.target.value)} />
+      <button onClick={addTodo}>Add Todo</button>
+    </div>
+  );
+};
+
+export default AddTodo;
+Now, you can use these components in your main application:
+
+jsx
+Copy code
+// App.js
+import React from 'react';
+import { TodoProvider } from './TodoContext';
+import TodoList from './TodoList';
+import AddTodo from './AddTodo';
+
+const App = () => {
+  return (
+    <TodoProvider>
+      <h1>Todos App</h1>
+      <TodoList />
+      <AddTodo />
+    </TodoProvider>
+  );
+};
+
+export default App;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+full code todos with react ts and context api
+ChatGPT
+Certainly! Below is a simple example of a Todos application using React with TypeScript and the Context API. This example includes a TodoContext to manage the state of todos and two components, TodoList and AddTodo, that consume and modify the todos through the context.
+
+tsx
+Copy code
+// TodoContext.tsx
+import React, { createContext, useContext, useReducer, Dispatch } from 'react';
+
+type Todo = {
+  id: number;
+  text: string;
+  completed: boolean;
+};
+
+type TodoAction =
+  | { type: 'ADD_TODO'; text: string }
+  | { type: 'TOGGLE_TODO'; id: number };
+
+type TodoState = Todo[];
+
+type TodoDispatch = Dispatch<TodoAction>;
+
+const TodoStateContext = createContext<TodoState | undefined>(undefined);
+const TodoDispatchContext = createContext<TodoDispatch | undefined>(undefined);
+
+const todoReducer = (state: TodoState, action: TodoAction): TodoState => {
+  switch (action.type) {
+    case 'ADD_TODO':
+      return [
+        ...state,
+        {
+          id: state.length + 1,
+          text: action.text,
+          completed: false,
+        },
+      ];
+    case 'TOGGLE_TODO':
+      return state.map((todo) =>
+        todo.id === action.id ? { ...todo, completed: !todo.completed } : todo
+      );
+    default:
+      return state;
+  }
+};
+
+const TodoProvider: React.FC = ({ children }) => {
+  const [todos, dispatch] = useReducer(todoReducer, []);
+
+  return (
+    <TodoStateContext.Provider value={todos}>
+      <TodoDispatchContext.Provider value={dispatch}>
+        {children}
+      </TodoDispatchContext.Provider>
+    </TodoStateContext.Provider>
+  );
+};
+
+const useTodoState = (): TodoState => {
+  const context = useContext(TodoStateContext);
+  if (context === undefined) {
+    throw new Error('useTodoState must be used within a TodoProvider');
+  }
+  return context;
+};
+
+const useTodoDispatch = (): TodoDispatch => {
+  const context = useContext(TodoDispatchContext);
+  if (context === undefined) {
+    throw new Error('useTodoDispatch must be used within a TodoProvider');
+  }
+  return context;
+};
+
+export { TodoProvider, useTodoState, useTodoDispatch };
+Now, let's create components that use this context:
+
+tsx
+Copy code
+// TodoList.tsx
+import React from 'react';
+import { useTodoState, useTodoDispatch } from './TodoContext';
+
+const TodoList: React.FC = () => {
+  const todos = useTodoState();
+  const dispatch = useTodoDispatch();
+
+  const toggleTodo = (id: number) => {
+    dispatch({ type: 'TOGGLE_TODO', id });
+  };
+
+  return (
+    <ul>
+      {todos.map((todo) => (
+        <li
+          key={todo.id}
+          style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}
+          onClick={() => toggleTodo(todo.id)}
+        >
+          {todo.text}
+        </li>
+      ))}
+    </ul>
+  );
+};
+
+export default TodoList;
+tsx
+Copy code
+// AddTodo.tsx
+import React, { useState } from 'react';
+import { useTodoDispatch } from './TodoContext';
+
+const AddTodo: React.FC = () => {
+  const [text, setText] = useState('');
+  const dispatch = useTodoDispatch();
+
+  const addTodo = () => {
+    if (text.trim() !== '') {
+      dispatch({ type: 'ADD_TODO', text });
+      setText('');
+    }
+  };
+
+  return (
+    <div>
+      <input type="text" value={text} onChange={(e) => setText(e.target.value)} />
+      <button onClick={addTodo}>Add Todo</button>
+    </div>
+  );
+};
+
+export default AddTodo;
+Now, you can use these components in your main application:
+
+tsx
+Copy code
+// App.tsx
+import React from 'react';
+import { TodoProvider } from './TodoContext';
+import TodoList from './TodoList';
+import AddTodo from './AddTodo';
+
+const App: React.FC = () => {
+  return (
+    <TodoProvider>
+      <h1>Todos App</h1>
+      <TodoList />
+      <AddTodo />
+    </TodoProvider>
+  );
+};
+
+export default App;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

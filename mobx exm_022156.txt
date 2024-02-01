@@ -1,0 +1,495 @@
+mobx exm
+
+full code todos with mobx and react ts
+ChatGPT
+Certainly! Here's an example of a Todos application using MobX for state management with React and TypeScript.
+
+First, install the necessary packages:
+
+bash
+Copy code
+npm install mobx mobx-react-lite
+Now, create the store:
+
+tsx
+Copy code
+// TodoStore.ts
+import { makeAutoObservable } from 'mobx';
+
+export interface Todo {
+  id: number;
+  text: string;
+  completed: boolean;
+}
+
+class TodoStore {
+  todos: Todo[] = [];
+
+  constructor() {
+    makeAutoObservable(this);
+  }
+
+  addTodo = (text: string) => {
+    this.todos.push({
+      id: this.todos.length + 1,
+      text,
+      completed: false,
+    });
+  };
+
+  toggleTodo = (id: number) => {
+    this.todos = this.todos.map((todo) =>
+      todo.id === id ? { ...todo, completed: !todo.completed } : todo
+    );
+  };
+}
+
+export default new TodoStore();
+Now, let's create the components:
+
+tsx
+Copy code
+// TodoList.tsx
+import React from 'react';
+import { observer } from 'mobx-react-lite';
+import todoStore from './TodoStore';
+
+const TodoList: React.FC = observer(() => {
+  const toggleTodo = (id: number) => {
+    todoStore.toggleTodo(id);
+  };
+
+  return (
+    <ul>
+      {todoStore.todos.map((todo) => (
+        <li
+          key={todo.id}
+          style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}
+          onClick={() => toggleTodo(todo.id)}
+        >
+          {todo.text}
+        </li>
+      ))}
+    </ul>
+  );
+});
+
+export default TodoList;
+tsx
+Copy code
+// AddTodo.tsx
+import React, { useState } from 'react';
+import { observer } from 'mobx-react-lite';
+import todoStore from './TodoStore';
+
+const AddTodo: React.FC = observer(() => {
+  const [text, setText] = useState('');
+
+  const addTodo = () => {
+    if (text.trim() !== '') {
+      todoStore.addTodo(text);
+      setText('');
+    }
+  };
+
+  return (
+    <div>
+      <input type="text" value={text} onChange={(e) => setText(e.target.value)} />
+      <button onClick={addTodo}>Add Todo</button>
+    </div>
+  );
+});
+
+export default AddTodo;
+Now, use these components in your main application:
+
+tsx
+Copy code
+// App.tsx
+import React from 'react';
+import { TodoProvider } from './TodoStore';
+import TodoList from './TodoList';
+import AddTodo from './AddTodo';
+
+const App: React.FC = () => {
+  return (
+    <TodoProvider>
+      <h1>Todos App</h1>
+      <TodoList />
+      <AddTodo />
+    </TodoProvider>
+  );
+};
+
+export default App;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+npm install mobx mobx-react-lite react react-dom @types/react @types/react-dom
+Now, you can create the necessary files:
+
+
+// TodoStore.ts
+import { makeAutoObservable } from 'mobx';
+
+export interface Todo {
+  id: number;
+  text: string;
+  completed: boolean;
+}
+
+class TodoStore {
+  todos: Todo[] = [];
+
+  constructor() {
+    makeAutoObservable(this);
+  }
+
+  addTodo = (text: string) => {
+    this.todos.push({
+      id: this.todos.length + 1,
+      text,
+      completed: false,
+    });
+  };
+
+  toggleTodo = (id: number) => {
+    this.todos = this.todos.map((todo) =>
+      todo.id === id ? { ...todo, completed: !todo.completed } : todo
+    );
+  };
+}
+
+const todoStore = new TodoStore();
+export default todoStore;
+
+
+
+
+
+
+// TodoList.tsx
+import React from 'react';
+import { useObserver } from 'mobx-react-lite';
+import todoStore from './TodoStore';
+
+const TodoList: React.FC = () => {
+  return useObserver(() => (
+    <ul>
+      {todoStore.todos.map((todo) => (
+        <li
+          key={todo.id}
+          style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}
+          onClick={() => todoStore.toggleTodo(todo.id)}
+        >
+          {todo.text}
+        </li>
+      ))}
+    </ul>
+  ));
+};
+
+export default TodoList;
+
+
+
+
+// AddTodo.tsx
+import React, { useState } from 'react';
+import { useObserver } from 'mobx-react-lite';
+import todoStore from './TodoStore';
+
+const AddTodo: React.FC = () => {
+  const [text, setText] = useState('');
+
+  const addTodo = () => {
+    if (text.trim() !== '') {
+      todoStore.addTodo(text);
+      setText('');
+    }
+  };
+
+  return useObserver(() => (
+    <div>
+      <input type="text" value={text} onChange={(e) => setText(e.target.value)} />
+      <button onClick={addTodo}>Add Todo</button>
+    </div>
+  ));
+};
+
+export default AddTodo;
+
+
+
+// App.tsx
+import React from 'react';
+import { TodoProvider } from './TodoStore';
+import TodoList from './TodoList';
+import AddTodo from './AddTodo';
+
+const App: React.FC = () => {
+  return (
+    <TodoProvider>
+      <h1>Todos App</h1>
+      <TodoList />
+      <AddTodo />
+    </TodoProvider>
+  );
+};
+
+export default App;
+
+
+
+
+
+// TodoProvider.tsx
+import React, { ReactNode } from 'react';
+import { Provider } from 'mobx-react-lite';
+import todoStore from './TodoStore';
+
+interface TodoProviderProps {
+  children: ReactNode;
+}
+
+const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
+  return <Provider todoStore={todoStore}>{children}</Provider>;
+};
+
+export default TodoProvider;
+
+
+
+
+Now, you can use these components in your main application:
+// index.tsx
+import React from 'react';
+import ReactDOM from 'react-dom';
+import App from './App';
+import TodoProvider from './TodoProvider';
+
+ReactDOM.render(
+  <React.StrictMode>
+    <TodoProvider>
+      <App />
+    </TodoProvider>
+  </React.StrictMode>,
+  document.getElementById('root')
+);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+npm install mobx mobx-react-lite
+Now, let's create the MobX store:
+
+tsx
+Copy code
+// TodoStore.ts
+import { makeAutoObservable } from 'mobx';
+
+export interface Todo {
+  id: number;
+  text: string;
+  completed: boolean;
+}
+
+export class TodoStore {
+  todos: Todo[] = [];
+
+  constructor() {
+    makeAutoObservable(this);
+  }
+
+  addTodo = (text: string) => {
+    this.todos.push({
+      id: this.todos.length + 1,
+      text,
+      completed: false,
+    });
+  };
+
+  toggleTodo = (id: number) => {
+    this.todos = this.todos.map((todo) =>
+      todo.id === id ? { ...todo, completed: !todo.completed } : todo
+    );
+  };
+}
+
+export const todoStore = new TodoStore();
+Now, let's create the React components using the MobX store:
+
+tsx
+Copy code
+// TodoList.tsx
+import React from 'react';
+import { observer } from 'mobx-react-lite';
+import { todoStore } from './TodoStore';
+
+const TodoList: React.FC = observer(() => {
+  const { todos, toggleTodo } = todoStore;
+
+  return (
+    <ul>
+      {todos.map((todo) => (
+        <li
+          key={todo.id}
+          style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}
+          onClick={() => toggleTodo(todo.id)}
+        >
+          {todo.text}
+        </li>
+      ))}
+    </ul>
+  );
+});
+
+export default TodoList;
+tsx
+Copy code
+// AddTodo.tsx
+import React, { useState } from 'react';
+import { observer } from 'mobx-react-lite';
+import { todoStore } from './TodoStore';
+
+const AddTodo: React.FC = observer(() => {
+  const [text, setText] = useState('');
+
+  const addTodo = () => {
+    if (text.trim() !== '') {
+      todoStore.addTodo(text);
+      setText('');
+    }
+  };
+
+  return (
+    <div>
+      <input type="text" value={text} onChange={(e) => setText(e.target.value)} />
+      <button onClick={addTodo}>Add Todo</button>
+    </div>
+  );
+});
+
+export default AddTodo;
+Finally, the main application file:
+
+tsx
+Copy code
+// App.tsx
+import React from 'react';
+import { TodoProvider } from './TodoContext';
+import TodoList from './TodoList';
+import AddTodo from './AddTodo';
+
+const App: React.FC = () => {
+  return (
+    <TodoProvider>
+      <h1>Todos App</h1>
+      <TodoList />
+      <AddTodo />
+    </TodoProvider>
+  );
+};
+
+export default App;
