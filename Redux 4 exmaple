@@ -1,0 +1,176 @@
+npm install redux react-redux @types/react-redux
+2. Redux Setup:
+
+a. Create Redux Store (store.ts):
+import { createStore, applyMiddleware, combineReducers } from 'redux';
+import thunk from 'redux-thunk';
+import { composeWithDevTools } from 'redux-devtools-extension';
+import { dataReducer } from './reducers/dataReducer';
+
+const rootReducer = combineReducers({
+  data: dataReducer,
+});
+
+const store = createStore(rootReducer, composeWithDevTools(applyMiddleware(thunk)));
+
+export type RootState = ReturnType<typeof rootReducer>;
+export default store;
+
+
+
+b. Create Reducer (reducers/dataReducer.ts):
+import { IData } from '../types';
+import { ActionTypes } from '../actions';
+
+interface IDataState {
+  data: IData[];
+  loading: boolean;
+  error: string | null;
+}
+
+const initialState: IDataState = {
+  data: [],
+  loading: false,
+  error: null,
+};
+
+export const dataReducer = (state = initialState, action: any): IDataState => {
+  switch (action.type) {
+    case ActionTypes.FETCH_DATA_REQUEST:
+      return {
+        ...state,
+        loading: true,
+        error: null,
+      };
+    case ActionTypes.FETCH_DATA_SUCCESS:
+      return {
+        ...state,
+        loading: false,
+        data: action.payload,
+        error: null,
+      };
+    case ActionTypes.FETCH_DATA_FAILURE:
+      return {
+        ...state,
+        loading: false,
+        error: action.payload,
+      };
+    default:
+      return state;
+  }
+};
+
+
+
+
+c. Create Action Types (actions.ts):
+export enum ActionTypes {
+  FETCH_DATA_REQUEST = 'FETCH_DATA_REQUEST',
+  FETCH_DATA_SUCCESS = 'FETCH_DATA_SUCCESS',
+  FETCH_DATA_FAILURE = 'FETCH_DATA_FAILURE',
+}
+
+
+
+
+d. Create Actions (actions/dataActions.ts):
+import { Dispatch } from 'redux';
+import { ActionTypes } from './types';
+import { IData } from '../types';
+import axios from 'axios';
+
+export const fetchData = () => {
+  return async (dispatch: Dispatch) => {
+    dispatch(fetchDataRequest());
+    try {
+      const response = await axios.get<IData[]>('/api/data');
+      dispatch(fetchDataSuccess(response.data));
+    } catch (error) {
+      dispatch(fetchDataFailure(error.message));
+    }
+  };
+};
+
+export const fetchDataRequest = () => {
+  return {
+    type: ActionTypes.FETCH_DATA_REQUEST,
+  };
+};
+
+export const fetchDataSuccess = (data: IData[]) => {
+  return {
+    type: ActionTypes.FETCH_DATA_SUCCESS,
+    payload: data,
+  };
+};
+
+export const fetchDataFailure = (error: string) => {
+  return {
+    type: ActionTypes.FETCH_DATA_FAILURE,
+    payload: error,
+  };
+};
+
+
+
+
+3. React Component:
+a. DataList Component (components/DataList.tsx):
+import React, { useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState } from '../store';
+import { fetchData } from '../actions/dataActions';
+
+const DataList: React.FC = () => {
+  const data = useSelector((state: RootState) => state.data.data);
+  const loading = useSelector((state: RootState) => state.data.loading);
+  const error = useSelector((state: RootState) => state.data.error);
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    dispatch(fetchData());
+  }, [dispatch]);
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
+
+  return (
+    <div>
+      <h1>Data List</h1>
+      <ul>
+        {data.map((item) => (
+          <li key={item.id}>{item.name}</li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+export default DataList;
+
+
+
+
+b. App Component (App.tsx):
+import React from 'react';
+import { Provider } from 'react-redux';
+import store from './store';
+import DataList from './components/DataList';
+
+const App: React.FC = () => {
+  return (
+    <Provider store={store}>
+      <div>
+        <h1>Redux Data App</h1>
+        <DataList />
+      </div>
+    </Provider>
+  );
+};
+
+export default App;
+
+
+Ensure your backend API is running and accessible at /api/data endpoint.
+
+
+
